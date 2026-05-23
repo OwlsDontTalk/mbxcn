@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { type CSSProperties } from "react";
 
 import { Footer } from "@/components/footer";
 import {
@@ -8,6 +9,7 @@ import {
   PageActions,
 } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { ExamplesGrid } from "./_components/examples-grid";
 
 export default function Page() {
   return (
@@ -33,6 +35,13 @@ export default function Page() {
           with one shadcn command.
         </p>
       </PageHeader>
+
+      <section
+        className="animate-fade-up animate-stagger container pt-4"
+        style={{ "--stagger": 4 } as CSSProperties}
+      >
+        <ExamplesGrid />
+      </section>
 
       <Footer />
     </>

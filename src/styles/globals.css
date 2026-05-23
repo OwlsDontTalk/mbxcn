@@ -225,3 +225,15 @@ code .line::before {
   text-align: right;
   color: var(--code-number);
 }
+
+/* mbxcn: let Popup render custom React content without Mapbox's default chrome */
+.mbxcn-popup .mapboxgl-popup-content {
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.mbxcn-popup .mapboxgl-popup-tip {
+  display: none;
+}

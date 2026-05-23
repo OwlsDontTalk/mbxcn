@@ -1,0 +1,22 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "controls",
+  "title": "Controls",
+  "description": "Tailwind-styled zoom and geolocate buttons overlaid on the map.",
+  "dependencies": [
+    "lucide-react"
+  ],
+  "registryDependencies": [
+    "map",
+    "button"
+  ],
+  "files": [
+    {
+      "path": "src/registry/controls.tsx",
+      "content": "\"use client\";\n\nimport { Locate, Minus, Plus } from \"lucide-react\";\nimport { useState } from \"react\";\n\nimport { cn } from \"@/lib/utils\";\nimport { Button } from \"@/components/ui/button\";\nimport { useMap } from \"@/components/ui/map\";\n\ntype Corner = \"top-left\" | \"top-right\" | \"bottom-left\" | \"bottom-right\";\n\nconst positionClasses: Record<Corner, string> = {\n  \"top-left\": \"top-3 left-3\",\n  \"top-right\": \"top-3 right-3\",\n  \"bottom-left\": \"bottom-3 left-3\",\n  \"bottom-right\": \"bottom-3 right-3\",\n};\n\nexport type ControlsProps = {\n  /** Corner to anchor the controls to. Defaults to top-right. */\n  position?: Corner;\n  /** Show the geolocate button. Defaults to true. */\n  geolocate?: boolean;\n  className?: string;\n};\n\nexport function Controls({\n  position = \"top-right\",\n  geolocate = true,\n  className,\n}: ControlsProps) {\n  const { map } = useMap();\n  const [locating, setLocating] = useState(false);\n\n  if (!map) return null;\n\n  const handleLocate = () => {\n    if (!navigator.geolocation) return;\n    setLocating(true);\n    navigator.geolocation.getCurrentPosition(\n      ({ coords }) => {\n        map.flyTo({ center: [coords.longitude, coords.latitude], zoom: 14 });\n        setLocating(false);\n      },\n      () => setLocating(false),\n      { enableHighAccuracy: true },\n    );\n  };\n\n  return (\n    <div\n      className={cn(\n        \"absolute z-10 flex flex-col gap-1\",\n        positionClasses[position],\n        className,\n      )}\n    >\n      <Button\n        type=\"button\"\n        variant=\"outline\"\n        size=\"icon-sm\"\n        aria-label=\"Zoom in\"\n        onClick={() => map.zoomIn()}\n      >\n        <Plus />\n      </Button>\n      <Button\n        type=\"button\"\n        variant=\"outline\"\n        size=\"icon-sm\"\n        aria-label=\"Zoom out\"\n        onClick={() => map.zoomOut()}\n      >\n        <Minus />\n      </Button>\n      {geolocate ? (\n        <Button\n          type=\"button\"\n          variant=\"outline\"\n          size=\"icon-sm\"\n          aria-label=\"My location\"\n          disabled={locating}\n          onClick={handleLocate}\n        >\n          <Locate className={cn(locating && \"animate-pulse\")} />\n        </Button>\n      ) : null}\n    </div>\n  );\n}\n",
+      "type": "registry:ui",
+      "target": "components/ui/controls.tsx"
+    }
+  ],
+  "type": "registry:ui"
+}

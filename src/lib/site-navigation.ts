@@ -1,4 +1,12 @@
-import { BookOpen, CornerDownRight, LucideIcon } from "lucide-react";
+import {
+  BookOpen,
+  CornerDownRight,
+  LucideIcon,
+  Map,
+  MapPin,
+  MessageSquare,
+  SlidersHorizontal,
+} from "lucide-react";
 
 export interface MainNavItem {
   href: string;
@@ -21,6 +29,15 @@ export const docsNavigation: SiteNavigationGroup[] = [
   {
     title: "Basics",
     items: [{ title: "Getting Started", href: "/docs", icon: BookOpen }],
+  },
+  {
+    title: "Components",
+    items: [
+      { title: "Map", href: "/docs/map", icon: Map },
+      { title: "Marker", href: "/docs/marker", icon: MapPin },
+      { title: "Popup", href: "/docs/popup", icon: MessageSquare },
+      { title: "Controls", href: "/docs/controls", icon: SlidersHorizontal },
+    ],
   },
 ];
 

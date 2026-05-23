@@ -1,0 +1,30 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "popup",
+  "title": "Popup",
+  "description": "A popup with custom React content. Auto-attaches to a parent Marker, or stands alone at given coordinates.",
+  "dependencies": [
+    "mapbox-gl"
+  ],
+  "registryDependencies": [
+    "map",
+    "marker"
+  ],
+  "files": [
+    {
+      "path": "src/registry/popup.tsx",
+      "content": "\"use client\";\n\nimport mapboxgl, { type PopupOptions } from \"mapbox-gl\";\nimport { useEffect, useMemo, type ReactNode } from \"react\";\nimport { createPortal } from \"react-dom\";\n\nimport { cn } from \"@/lib/utils\";\nimport { useMap } from \"@/components/ui/map\";\nimport { useMarker } from \"@/components/ui/marker\";\n\nexport type PopupProps = {\n  children: ReactNode;\n  /** Longitude. Ignored when the popup is nested inside a `<Marker>`. */\n  lng?: number;\n  /** Latitude. Ignored when the popup is nested inside a `<Marker>`. */\n  lat?: number;\n  className?: string;\n  onClose?: () => void;\n} & Omit<PopupOptions, \"className\">;\n\nexport function Popup({\n  children,\n  lng,\n  lat,\n  className,\n  onClose,\n  ...options\n}: PopupProps) {\n  const { map } = useMap();\n  const marker = useMarker();\n\n  // Stable DOM node we portal the React children into.\n  const container = useMemo(() => {\n    const el = document.createElement(\"div\");\n    el.className = \"mbxcn-popup-content\";\n    return el;\n  }, []);\n\n  useEffect(() => {\n    if (!map) return;\n\n    const popup = new mapboxgl.Popup({\n      closeButton: false,\n      ...options,\n      className: cn(\"mbxcn-popup\", className),\n    })\n      .setDOMContent(container)\n      .setMaxWidth(\"none\");\n\n    if (onClose) popup.on(\"close\", onClose);\n\n    if (marker) {\n      marker.getPopup()?.remove();\n      marker.setPopup(popup);\n    } else if (lng !== undefined && lat !== undefined) {\n      popup.setLngLat([lng, lat]).addTo(map);\n    }\n\n    return () => {\n      if (onClose) popup.off(\"close\", onClose);\n      popup.remove();\n      if (marker?.getPopup()) marker.setPopup(null);\n    };\n  }, [map, marker, lng, lat, className, container, onClose, options]);\n\n  return createPortal(children, container);\n}\n",
+      "type": "registry:ui",
+      "target": "components/ui/popup.tsx"
+    }
+  ],
+  "css": {
+    ".mbxcn-popup .mapboxgl-popup-content": {
+      "@apply !bg-transparent !p-0 !shadow-none !rounded-none": {}
+    },
+    ".mbxcn-popup .mapboxgl-popup-tip": {
+      "@apply !hidden": {}
+    }
+  },
+  "type": "registry:ui"
+}

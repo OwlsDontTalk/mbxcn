@@ -10,6 +10,7 @@ export default function IntroductionPage() {
     <DocsLayout
       title="Introduction"
       description="Copy-paste Mapbox GL components for React."
+      next={{ title: "Map", href: "/docs/map" }}
       toc={[
         { title: "What is mbxcn?", slug: "what-is-mbxcn" },
         { title: "Status", slug: "status" },
