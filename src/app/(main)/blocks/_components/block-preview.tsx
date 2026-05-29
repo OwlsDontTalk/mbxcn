@@ -25,8 +25,10 @@ export function BlockPreview({
   const { name, title, description, meta } = block;
   const [copiedType, setCopiedType] = useState<"code" | "cli" | null>(null);
 
+  const registryUrl = `https://mbxcn.owlsdont.com/r/${name}.json`;
+
   async function copyCli() {
-    await navigator.clipboard.writeText(`npx shadcn@latest add @mbxcn/${name}`);
+    await navigator.clipboard.writeText(`npx shadcn@latest add ${registryUrl}`);
     setCopiedType("cli");
     setTimeout(() => setCopiedType(null), 2000);
   }
@@ -77,7 +79,7 @@ export function BlockPreview({
               size="sm"
             >
               {copiedType === "cli" ? <Check /> : <Terminal />}
-              npx shadcn add @mbxcn/{name}
+              npx shadcn add {registryUrl}
             </Button>
           </div>
         </div>

@@ -1,7 +1,8 @@
 import { Metadata } from "next";
 
+import { CodeBlock } from "../_components/code-block";
 import { ComponentPreview } from "../_components/component-preview";
-import { DocsCode, DocsLayout, DocsPropTable, DocsSection } from "../_components/docs";
+import { DocsCode, DocsLayout, DocsNote, DocsPropTable, DocsSection } from "../_components/docs";
 import { BasicMapExample } from "../_components/examples/basic-map-example";
 import { getExampleSource } from "../_components/get-example-source";
 
@@ -20,6 +21,7 @@ export default function MapPage() {
       next={{ title: "Marker", href: "/docs/marker" }}
       toc={[
         { title: "Basic Usage", slug: "basic-usage" },
+        { title: "Theming", slug: "theming" },
         { title: "Props", slug: "props" },
       ]}
     >
@@ -32,6 +34,38 @@ export default function MapPage() {
         <ComponentPreview code={basicMapSource}>
           <BasicMapExample />
         </ComponentPreview>
+      </DocsSection>
+
+      <DocsSection title="Theming">
+        <p>
+          By default <DocsCode>{"<Map>"}</DocsCode> follows your site theme: it
+          watches the <DocsCode>light</DocsCode> / <DocsCode>dark</DocsCode>{" "}
+          class on <DocsCode>{"<html>"}</DocsCode> (the one{" "}
+          <DocsCode>next-themes</DocsCode> toggles) and swaps the basemap live.
+          No configuration needed.
+        </p>
+        <p>
+          To pin the basemap to a fixed theme and stop it reacting to site theme
+          changes, pass <DocsCode>theme</DocsCode>:
+        </p>
+        <CodeBlock code={`<Map theme="dark" />`} />
+        <p>
+          To change which Mapbox style each theme maps to, pass{" "}
+          <DocsCode>styles</DocsCode>:
+        </p>
+        <CodeBlock
+          code={`<Map
+  styles={{
+    light: "mapbox://styles/mapbox/streets-v12",
+    dark: "mapbox://styles/mapbox/dark-v11",
+  }}
+/>`}
+        />
+        <DocsNote>
+          <strong>Heads up:</strong> a pinned <DocsCode>theme</DocsCode> is the
+          off switch for automatic theme following - the map will ignore the
+          document theme entirely until you remove it.
+        </DocsNote>
       </DocsSection>
 
       <DocsSection title="Props">
@@ -47,7 +81,7 @@ export default function MapPage() {
               name: "theme",
               type: '"light" | "dark"',
               description:
-                "Basemap theme. Auto-detected from the document class when omitted.",
+                "Basemap theme. Follows the document theme when omitted; set it to pin a theme and disable automatic switching.",
             },
             {
               name: "styles",
