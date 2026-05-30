@@ -24,7 +24,7 @@ const siteDescription =
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "mbxcn",
+    default: "mbxcn - Mapbox components for React",
     template: "%s - mbxcn",
   },
   description: siteDescription,
@@ -52,12 +52,12 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: siteUrl,
     siteName: siteName,
-    title: "mbxcn",
+    title: "mbxcn - Mapbox components for React",
     description: siteDescription,
   },
   twitter: {
     card: "summary_large_image",
-    title: "mbxcn",
+    title: "mbxcn - Mapbox components for React",
     description: siteDescription,
   },
   alternates: {
