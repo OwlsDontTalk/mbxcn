@@ -7,7 +7,7 @@
       "name": "map",
       "type": "registry:ui",
       "title": "Map",
-      "description": "A Mapbox GL map container with light/dark theming and a useMap() context for composing children.",
+      "description": "A Mapbox GL map container with light/dark theming, Standard style + light preset support, and a useMap() context for composing children.",
       "dependencies": ["mapbox-gl"],
       "registryDependencies": [],
       "files": [

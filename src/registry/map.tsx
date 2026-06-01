@@ -23,6 +23,9 @@ const defaultStyles = {
 
 type Theme = "light" | "dark";
 
+/** A Mapbox Standard light preset. Ignored by styles that don't expose it. */
+export type LightPreset = "day" | "dusk" | "dawn" | "night";
+
 /** Read the theme from the document class (works with next-themes). */
 function getDocumentTheme(): Theme | null {
   if (typeof document === "undefined") return null;
@@ -93,21 +96,43 @@ export type MapProps = {
   theme?: Theme;
   /** Override the default Mapbox styles per theme. */
   styles?: { light?: string; dark?: string };
+  /**
+   * Use a single fixed style (e.g. "mapbox://styles/mapbox/standard"). Takes
+   * precedence over `theme`/`styles` and disables theme-based style swapping.
+   */
+  mapStyle?: string;
+  /**
+   * Light preset for the Mapbox Standard style: "day", "dusk", "dawn", "night".
+   * Re-applied across style swaps; ignored by styles without a light preset.
+   */
+  lightPreset?: LightPreset;
   /** Mapbox access token. Falls back to NEXT_PUBLIC_MAPBOX_TOKEN. */
   accessToken?: string;
 } & Omit<MapOptions, "container" | "style" | "accessToken">;
 
 const Map = forwardRef<MapRef, MapProps>(function Map(
-  { children, className, theme: themeProp, styles, accessToken, ...options },
+  {
+    children,
+    className,
+    theme: themeProp,
+    styles,
+    mapStyle,
+    lightPreset,
+    accessToken,
+    ...options
+  },
   ref,
 ) {
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const appliedStyleRef = useRef<string | null>(null);
+  const lightPresetRef = useRef<LightPreset | undefined>(lightPreset);
   const resolvedTheme = useResolvedTheme(themeProp);
 
   const mapStyles = useMemo(() => ({ ...defaultStyles, ...styles }), [styles]);
+  // A fixed `mapStyle` wins; otherwise the style follows the resolved theme.
+  const activeStyle = mapStyle ?? mapStyles[resolvedTheme];
 
   // Initialize the map once the container is mounted.
   useEffect(() => {
@@ -121,12 +146,11 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
       return;
     }
 
-    const style = mapStyles[resolvedTheme];
-    appliedStyleRef.current = style;
+    appliedStyleRef.current = activeStyle;
     const instance = new mapboxgl.Map({
       container,
       accessToken: token,
-      style,
+      style: activeStyle,
       // We add a compact attribution below; pass `attributionControl` to override.
       attributionControl: false,
       ...options,
@@ -138,6 +162,17 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
     if (options.attributionControl === undefined) {
       instance.addControl(new mapboxgl.AttributionControl({ compact: true }));
     }
+
+    // Re-apply the light preset on every style load so it survives style swaps.
+    instance.on("style.load", () => {
+      const preset = lightPresetRef.current;
+      if (!preset) return;
+      try {
+        instance.setConfigProperty("basemap", "lightPreset", preset);
+      } catch {
+        // The active style has no light preset (e.g. classic styles); ignore.
+      }
+    });
 
     instance.on("load", () => setIsLoaded(true));
     // Store the imperatively created map so children can read it via context.
@@ -154,13 +189,23 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [container]);
 
-  // Swap the basemap style when the resolved theme changes.
+  // Swap the basemap when the active style changes (theme or `mapStyle`).
   useEffect(() => {
-    const style = mapStyles[resolvedTheme];
-    if (!map || appliedStyleRef.current === style) return;
-    appliedStyleRef.current = style;
-    map.setStyle(style);
-  }, [map, resolvedTheme, mapStyles]);
+    if (!map || appliedStyleRef.current === activeStyle) return;
+    appliedStyleRef.current = activeStyle;
+    map.setStyle(activeStyle);
+  }, [map, activeStyle]);
+
+  // Apply the light preset when it changes without a style swap.
+  useEffect(() => {
+    lightPresetRef.current = lightPreset;
+    if (!map || !lightPreset) return;
+    try {
+      map.setConfigProperty("basemap", "lightPreset", lightPreset);
+    } catch {
+      // The active style has no light preset; ignore.
+    }
+  }, [map, lightPreset]);
 
   useImperativeHandle(ref, () => map as mapboxgl.Map, [map]);
 
