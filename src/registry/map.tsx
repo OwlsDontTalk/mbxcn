@@ -134,6 +134,16 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
   // A fixed `mapStyle` wins; otherwise the style follows the resolved theme.
   const activeStyle = mapStyle ?? mapStyles[resolvedTheme];
 
+  // Speed up tile/3D parsing: give Mapbox more workers (default is 2) and
+  // pre-initialize the shared WebWorkers so they survive map removals and SPA
+  // navigations. Both must run before maps are created; prewarm() is idempotent.
+  useEffect(() => {
+    if (typeof navigator !== "undefined") {
+      mapboxgl.workerCount = Math.min(navigator.hardwareConcurrency || 4, 8);
+    }
+    mapboxgl.prewarm();
+  }, []);
+
   // Initialize the map once the container is mounted.
   useEffect(() => {
     if (!container) return;

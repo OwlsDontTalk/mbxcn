@@ -23,13 +23,14 @@ import { Marker } from "@/registry/marker";
 import { ExampleCard, PlaceholderCard } from "./example-card";
 import { InView } from "./in-view";
 
-// Camera for the 3D hero. Framed on the Ferry Building with the skyline behind;
-// tweak center/bearing/pitch to taste.
+// Camera for the 3D hero. Kept below zoom 15 on purpose: the Standard style only
+// loads heavy 3D landmark meshes higher than that, so this stays light extruded
+// buildings only. Downtown Austin; tweak center/bearing/pitch to taste.
 const hero3d = {
-  center: [-122.3955, 37.7949] as [number, number],
-  zoom: 15.6,
-  pitch: 62,
-  bearing: 250,
+  center: [-97.7426, 30.2668] as [number, number],
+  zoom: 14.4,
+  pitch: 50,
+  bearing: -20,
 };
 
 type Poi = {
@@ -198,6 +199,8 @@ function Hero3D() {
       zoom={hero3d.zoom}
       pitch={hero3d.pitch}
       bearing={hero3d.bearing}
+      interactive={false}
+      fadeDuration={0}
     />
   );
 }
@@ -210,7 +213,7 @@ export function ExamplesGrid() {
           <div className="text-muted-foreground text-[10px] tracking-wider uppercase">
             3D · follows day / night
           </div>
-          <div className="text-sm font-semibold">San Francisco</div>
+          <div className="text-sm font-semibold">Austin, TX</div>
         </div>
         <InView>
           <Hero3D />
