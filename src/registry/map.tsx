@@ -108,6 +108,8 @@ export type MapProps = {
   lightPreset?: LightPreset;
   /** Mapbox access token. Falls back to NEXT_PUBLIC_MAPBOX_TOKEN. */
   accessToken?: string;
+  /** Overlay shown until the map finishes loading. Defaults to a spinner; pass `false` to hide. */
+  loader?: ReactNode;
 } & Omit<MapOptions, "container" | "style" | "accessToken">;
 
 const Map = forwardRef<MapRef, MapProps>(function Map(
@@ -119,6 +121,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
     mapStyle,
     lightPreset,
     accessToken,
+    loader,
     ...options
   },
   ref,
@@ -133,16 +136,6 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
   const mapStyles = useMemo(() => ({ ...defaultStyles, ...styles }), [styles]);
   // A fixed `mapStyle` wins; otherwise the style follows the resolved theme.
   const activeStyle = mapStyle ?? mapStyles[resolvedTheme];
-
-  // Speed up tile/3D parsing: give Mapbox more workers (default is 2) and
-  // pre-initialize the shared WebWorkers so they survive map removals and SPA
-  // navigations. Both must run before maps are created; prewarm() is idempotent.
-  useEffect(() => {
-    if (typeof navigator !== "undefined") {
-      mapboxgl.workerCount = Math.min(navigator.hardwareConcurrency || 4, 8);
-    }
-    mapboxgl.prewarm();
-  }, []);
 
   // Initialize the map once the container is mounted.
   useEffect(() => {
@@ -232,6 +225,14 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
       <MapContext.Provider value={contextValue}>
         {isLoaded ? children : null}
       </MapContext.Provider>
+      {!isLoaded &&
+        (loader === undefined ? (
+          <div className="bg-background/60 absolute inset-0 z-10 flex items-center justify-center">
+            <div className="border-muted-foreground/30 border-t-foreground size-6 animate-spin rounded-full border-2" />
+          </div>
+        ) : (
+          loader
+        ))}
     </div>
   );
 });

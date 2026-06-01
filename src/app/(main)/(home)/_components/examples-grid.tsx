@@ -23,14 +23,20 @@ import { Marker } from "@/registry/marker";
 import { ExampleCard, PlaceholderCard } from "./example-card";
 import { InView } from "./in-view";
 
-// Camera for the 3D hero. Kept below zoom 15 on purpose: the Standard style only
-// loads heavy 3D landmark meshes higher than that, so this stays light extruded
-// buildings only. Downtown Austin; tweak center/bearing/pitch to taste.
+// Camera for the 3D hero (downtown Austin). Interaction is constrained: a small
+// zoom range and a tight pan box so it can be nudged but not flung around or
+// zoomed deep into heavy landmark meshes. Tweak to taste.
 const hero3d = {
   center: [-97.7426, 30.2668] as [number, number],
-  zoom: 14.4,
-  pitch: 50,
+  zoom: 15.8,
+  minZoom: 14,
+  maxZoom: 15.8,
+  pitch: 52,
   bearing: -20,
+  maxBounds: [
+    [-97.78, 30.24],
+    [-97.7, 30.3],
+  ] as [[number, number], [number, number]],
 };
 
 type Poi = {
@@ -197,9 +203,13 @@ function Hero3D() {
       lightPreset={lightPreset}
       center={hero3d.center}
       zoom={hero3d.zoom}
+      minZoom={hero3d.minZoom}
+      maxZoom={hero3d.maxZoom}
+      maxBounds={hero3d.maxBounds}
       pitch={hero3d.pitch}
       bearing={hero3d.bearing}
-      interactive={false}
+      pitchWithRotate={false}
+      dragRotate={false}
       fadeDuration={0}
     />
   );
@@ -215,9 +225,7 @@ export function ExamplesGrid() {
           </div>
           <div className="text-sm font-semibold">Austin, TX</div>
         </div>
-        <InView>
-          <Hero3D />
-        </InView>
+        <Hero3D />
       </ExampleCard>
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
