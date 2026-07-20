@@ -24,7 +24,7 @@ export default function ChoroplethPage() {
       title="Choropleth"
       description="Regions coloured by a data value, with outlines and hover highlighting."
       prev={{ title: "Layer", href: "/docs/layer" }}
-      next={{ title: "3D", href: "/docs/3d" }}
+      next={{ title: "Legend", href: "/docs/legend" }}
       toc={[
         { title: "Usage", slug: "usage" },
         { title: "Ramps", slug: "ramps" },

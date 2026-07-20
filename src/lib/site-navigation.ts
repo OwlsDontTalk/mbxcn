@@ -7,6 +7,7 @@ import {
   Map,
   MapPin,
   MessageSquare,
+  ListTree,
   Palette,
   SlidersHorizontal,
 } from "lucide-react";
@@ -42,6 +43,7 @@ export const docsNavigation: SiteNavigationGroup[] = [
       { title: "Controls", href: "/docs/controls", icon: SlidersHorizontal },
       { title: "Layer", href: "/docs/layer", icon: Layers, new: true },
       { title: "Choropleth", href: "/docs/choropleth", icon: Palette, new: true },
+      { title: "Legend", href: "/docs/legend", icon: ListTree, new: true },
     ],
   },
   {

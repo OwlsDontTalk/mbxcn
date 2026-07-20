@@ -8,7 +8,9 @@
       "type": "registry:ui",
       "title": "Map",
       "description": "A Mapbox GL map container with light/dark theming, Standard style + light preset support, and a useMap() context for composing children.",
-      "dependencies": ["mapbox-gl"],
+      "dependencies": [
+        "mapbox-gl"
+      ],
       "registryDependencies": [],
       "files": [
         {
@@ -23,8 +25,12 @@
       "type": "registry:ui",
       "title": "Marker",
       "description": "A marker placed at given coordinates. Renders a default pin or custom content, and exposes itself for an attached Popup.",
-      "dependencies": ["mapbox-gl"],
-      "registryDependencies": ["map"],
+      "dependencies": [
+        "mapbox-gl"
+      ],
+      "registryDependencies": [
+        "map"
+      ],
       "files": [
         {
           "path": "src/registry/marker.tsx",
@@ -38,8 +44,13 @@
       "type": "registry:ui",
       "title": "Popup",
       "description": "A popup with custom React content. Auto-attaches to a parent Marker, or stands alone at given coordinates.",
-      "dependencies": ["mapbox-gl"],
-      "registryDependencies": ["map", "marker"],
+      "dependencies": [
+        "mapbox-gl"
+      ],
+      "registryDependencies": [
+        "map",
+        "marker"
+      ],
       "files": [
         {
           "path": "src/registry/popup.tsx",
@@ -61,8 +72,13 @@
       "type": "registry:ui",
       "title": "Controls",
       "description": "Tailwind-styled zoom and geolocate buttons overlaid on the map.",
-      "dependencies": ["lucide-react"],
-      "registryDependencies": ["map", "button"],
+      "dependencies": [
+        "lucide-react"
+      ],
+      "registryDependencies": [
+        "map",
+        "button"
+      ],
       "files": [
         {
           "path": "src/registry/controls.tsx",
@@ -76,8 +92,12 @@
       "type": "registry:ui",
       "title": "Layer",
       "description": "A declarative GeoJSON source + layer as a child of Map. Survives style swaps, updates data via setData, and passes the Mapbox paint/layout spec straight through.",
-      "dependencies": ["mapbox-gl"],
-      "registryDependencies": ["map"],
+      "dependencies": [
+        "mapbox-gl"
+      ],
+      "registryDependencies": [
+        "map"
+      ],
       "files": [
         {
           "path": "src/registry/layer.tsx",
@@ -91,8 +111,13 @@
       "type": "registry:ui",
       "title": "Choropleth",
       "description": "Regions coloured by a data value, with outlines and feature-state hover highlighting. Its ramp object is shared with Legend so swatches cannot drift from the paint.",
-      "dependencies": ["mapbox-gl"],
-      "registryDependencies": ["map", "layer"],
+      "dependencies": [
+        "mapbox-gl"
+      ],
+      "registryDependencies": [
+        "map",
+        "layer"
+      ],
       "files": [
         {
           "path": "src/registry/choropleth.tsx",
@@ -102,12 +127,37 @@
       ]
     },
     {
+      "name": "legend",
+      "type": "registry:ui",
+      "title": "Legend",
+      "description": "A map legend rendered from the same ramp object that drives the Choropleth paint expression, so swatches cannot drift from the colours on the map.",
+      "dependencies": [],
+      "registryDependencies": [
+        "choropleth"
+      ],
+      "files": [
+        {
+          "path": "src/registry/legend.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/legend.tsx"
+        }
+      ]
+    },
+    {
       "name": "store-locator",
       "type": "registry:block",
       "title": "Store Locator",
       "description": "A full-page store locator: a searchable location list, fly-to navigation, and popups on a Mapbox map.",
-      "dependencies": ["mapbox-gl", "lucide-react"],
-      "registryDependencies": ["map", "marker", "popup", "controls"],
+      "dependencies": [
+        "mapbox-gl",
+        "lucide-react"
+      ],
+      "registryDependencies": [
+        "map",
+        "marker",
+        "popup",
+        "controls"
+      ],
       "files": [
         {
           "path": "src/registry/blocks/store-locator/page.tsx",
@@ -120,7 +170,9 @@
           "target": "app/store-locator/data.ts"
         }
       ],
-      "meta": { "iframeHeight": "640px" }
+      "meta": {
+        "iframeHeight": "640px"
+      }
     }
   ]
 }

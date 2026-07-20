@@ -396,7 +396,7 @@ function GlobeCard() {
         Globe · routes from Chicago
       </div>
       <InView>
-        <Map projection="globe" center={[-96, 38.5]} zoom={3.2}>
+        <Map projection="globe" center={[-96, 38.5]} zoom={2}>
           <GlobeAtmosphere />
           <Layer
             id="globe-arc-glow"
