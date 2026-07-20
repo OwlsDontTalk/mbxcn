@@ -1,10 +1,9 @@
 "use client";
 
-import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import {
+  Car,
   Coffee,
-  Footprints,
   Globe,
   Mountain,
   Music,
@@ -18,26 +17,10 @@ import {
 } from "lucide-react";
 import { type LayerSpecification } from "mapbox-gl";
 
-import { Map, useMap, type LightPreset } from "@/registry/map";
+import { Map, useMap } from "@/registry/map";
 import { Marker } from "@/registry/marker";
 import { ExampleCard, PlaceholderCard } from "./example-card";
 import { InView } from "./in-view";
-
-// Camera for the 3D hero (downtown Austin). Interaction is constrained: a small
-// zoom range and a tight pan box so it can be nudged but not flung around or
-// zoomed deep into heavy landmark meshes. Tweak to taste.
-const hero3d = {
-  center: [-97.7426, 30.2668] as [number, number],
-  zoom: 15.8,
-  minZoom: 14,
-  maxZoom: 15.8,
-  pitch: 52,
-  bearing: -20,
-  maxBounds: [
-    [-97.78, 30.24],
-    [-97.7, 30.3],
-  ] as [[number, number], [number, number]],
-};
 
 type Poi = {
   name: string;
@@ -115,6 +98,20 @@ function RouteLayer({ path }: { path: [number, number][] }) {
 
 type IsochroneProfile = "walking" | "driving" | "cycling";
 
+function collectPositions(features: GeoJSON.Feature[]): [number, number][] {
+  const out: [number, number][] = [];
+  for (const { geometry } of features) {
+    if (geometry.type === "Polygon") {
+      for (const ring of geometry.coordinates)
+        for (const p of ring) out.push(p as [number, number]);
+    } else if (geometry.type === "MultiPolygon") {
+      for (const poly of geometry.coordinates)
+        for (const ring of poly) for (const p of ring) out.push(p as [number, number]);
+    }
+  }
+  return out;
+}
+
 /**
  * Fetches a travel-time boundary from the Mapbox Isochrone API (how far you can
  * reach within `minutes` from `center`) and draws it as a filled polygon.
@@ -178,6 +175,29 @@ function IsochroneLayer({
     };
     add();
     map.on("style.load", add);
+
+    // Frame the camera to the isochrone polygon.
+    const positions = collectPositions(data.features);
+    if (positions.length) {
+      let minLng = Infinity,
+        minLat = Infinity,
+        maxLng = -Infinity,
+        maxLat = -Infinity;
+      for (const [lng, lat] of positions) {
+        minLng = Math.min(minLng, lng);
+        minLat = Math.min(minLat, lat);
+        maxLng = Math.max(maxLng, lng);
+        maxLat = Math.max(maxLat, lat);
+      }
+      map.fitBounds(
+        [
+          [minLng, minLat],
+          [maxLng, maxLat],
+        ],
+        { padding: 24, duration: 0 },
+      );
+    }
+
     return () => {
       map.off("style.load", add);
       try {
@@ -193,41 +213,9 @@ function IsochroneLayer({
   return null;
 }
 
-function Hero3D() {
-  const { resolvedTheme } = useTheme();
-  const lightPreset: LightPreset = resolvedTheme === "dark" ? "night" : "day";
-
-  return (
-    <Map
-      mapStyle="mapbox://styles/mapbox/standard"
-      lightPreset={lightPreset}
-      center={hero3d.center}
-      zoom={hero3d.zoom}
-      minZoom={hero3d.minZoom}
-      maxZoom={hero3d.maxZoom}
-      maxBounds={hero3d.maxBounds}
-      pitch={hero3d.pitch}
-      bearing={hero3d.bearing}
-      pitchWithRotate={false}
-      dragRotate={false}
-      fadeDuration={0}
-    />
-  );
-}
-
 export function ExamplesGrid() {
   return (
     <div className="space-y-5">
-      <ExampleCard className="h-[58vh] min-h-[380px]">
-        <div className="bg-background/90 border-border/50 absolute top-3 left-3 z-10 rounded-lg border px-3 py-2 shadow-lg backdrop-blur-md">
-          <div className="text-muted-foreground text-[10px] tracking-wider uppercase">
-            3D · follows day / night
-          </div>
-          <div className="text-sm font-semibold">Austin, TX</div>
-        </div>
-        <Hero3D />
-      </ExampleCard>
-
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
         <ExampleCard className="h-72">
           <div className="bg-background/90 border-border/50 absolute top-3 left-3 z-10 rounded-md border px-2.5 py-1 text-xs font-medium shadow-sm backdrop-blur-md">
@@ -274,14 +262,14 @@ export function ExamplesGrid() {
 
         <ExampleCard className="h-72">
           <div className="bg-background/90 border-border/50 absolute top-3 left-3 z-10 rounded-md border px-2.5 py-1 text-xs font-medium shadow-sm backdrop-blur-md">
-            20-min walk · Oakland
+            10-min drive · Oakland
           </div>
           <InView>
-            <Map center={oaklandCenter} zoom={12.6}>
-              <IsochroneLayer center={oaklandCenter} profile="walking" minutes={20} />
+            <Map center={oaklandCenter} zoom={11.2}>
+              <IsochroneLayer center={oaklandCenter} profile="driving" minutes={10} />
               <Marker lng={oaklandCenter[0]} lat={oaklandCenter[1]}>
                 <span className="flex size-7 items-center justify-center rounded-full border-2 border-white bg-indigo-600 text-white shadow-md">
-                  <Footprints className="size-3.5" />
+                  <Car className="size-3.5" />
                 </span>
               </Marker>
             </Map>

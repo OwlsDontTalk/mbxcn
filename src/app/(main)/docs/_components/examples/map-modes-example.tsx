@@ -15,7 +15,7 @@ export function MapModesExample() {
       <Map
         mapStyle="mapbox://styles/mapbox/standard"
         lightPreset={preset}
-        center={[-73.9857, 40.7484]}
+        center={[-97.7426, 30.2668]}
         zoom={15.5}
         pitch={55}
         bearing={-20}

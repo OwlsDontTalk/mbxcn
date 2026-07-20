@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  Boxes,
   CornerDownRight,
   LucideIcon,
   Map,
@@ -38,6 +39,10 @@ export const docsNavigation: SiteNavigationGroup[] = [
       { title: "Popup", href: "/docs/popup", icon: MessageSquare },
       { title: "Controls", href: "/docs/controls", icon: SlidersHorizontal },
     ],
+  },
+  {
+    title: "Guides",
+    items: [{ title: "3D", href: "/docs/3d", icon: Boxes, new: true }],
   },
 ];
 

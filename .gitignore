@@ -38,6 +38,9 @@ yarn-error.log*
 # local reference material (not part of the project)
 /reference/
 
+# internal planning docs - this repo is public, these are for us only
+/internal/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

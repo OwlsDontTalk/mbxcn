@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "registry:build": "npx shadcn build -o ./public/r && npx tsx scripts/fix-registry-imports.ts"
   },
   "dependencies": {

@@ -17,6 +17,7 @@ export default function ControlsPage() {
       title="Controls"
       description="Tailwind-styled zoom and geolocate buttons overlaid on the map."
       prev={{ title: "Popup", href: "/docs/popup" }}
+      next={{ title: "3D", href: "/docs/3d" }}
       toc={[
         { title: "Usage", slug: "usage" },
         { title: "Props", slug: "props" },
