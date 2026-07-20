@@ -249,6 +249,206 @@ function IsochroneLayer({
   return null;
 }
 
+// Chicago hub with routes to major US cities.
+const globeHub: [number, number] = [-87.6298, 41.8781];
+const globeSpokes: [number, number][] = [
+  [-122.3321, 47.6062],
+  [-122.4194, 37.7749],
+  [-118.2437, 34.0522],
+  [-104.9903, 39.7392],
+  [-95.3698, 29.7604],
+  [-80.1918, 25.7617],
+  [-74.006, 40.7128],
+  [-71.0589, 42.3601],
+];
+
+function arcBetween(
+  from: [number, number],
+  to: [number, number],
+  steps = 48,
+): [number, number][] {
+  const [x1, y1] = from;
+  const [x2, y2] = to;
+  const mx = (x1 + x2) / 2;
+  const my = (y1 + y2) / 2;
+  // Push the control point perpendicular to the chord so the arc bows outward.
+  const bend = Math.hypot(x2 - x1, y2 - y1) * 0.18;
+  const cx = mx - (y2 - y1) * (bend / Math.hypot(x2 - x1, y2 - y1) || 0);
+  const cy = my + (x2 - x1) * (bend / Math.hypot(x2 - x1, y2 - y1) || 0);
+
+  return Array.from({ length: steps + 1 }, (_, i) => {
+    const t = i / steps;
+    const u = 1 - t;
+    return [
+      u * u * x1 + 2 * u * t * cx + t * t * x2,
+      u * u * y1 + 2 * u * t * cy + t * t * y2,
+    ] as [number, number];
+  });
+}
+
+const globeArcCoords = globeSpokes.map((spoke) => arcBetween(globeHub, spoke));
+
+const globeArcs: GeoJSON.FeatureCollection = {
+  type: "FeatureCollection",
+  features: globeArcCoords.map((coordinates) => ({
+    type: "Feature",
+    properties: {},
+    geometry: { type: "LineString", coordinates },
+  })),
+};
+
+const dotsPerArc = 4;
+
+function pointOnArc(
+  coords: [number, number][],
+  t: number,
+): [number, number] {
+  const span = (coords.length - 1) * (((t % 1) + 1) % 1);
+  const index = Math.floor(span);
+  const frac = span - index;
+  const [x1, y1] = coords[index];
+  const [x2, y2] = coords[Math.min(index + 1, coords.length - 1)];
+  return [x1 + (x2 - x1) * frac, y1 + (y2 - y1) * frac];
+}
+
+function buildArcDots(time: number): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = [];
+  globeArcCoords.forEach((coords, arcIndex) => {
+    for (let k = 0; k < dotsPerArc; k++) {
+      const t = time + k / dotsPerArc + arcIndex * 0.07;
+      features.push({
+        type: "Feature",
+        properties: {},
+        geometry: { type: "Point", coordinates: pointOnArc(coords, t) },
+      });
+    }
+  });
+  return { type: "FeatureCollection", features };
+}
+
+const globePoints: GeoJSON.FeatureCollection = {
+  type: "FeatureCollection",
+  features: [globeHub, ...globeSpokes].map((point, index) => ({
+    type: "Feature",
+    properties: { hub: index === 0 ? 1 : 0 },
+    geometry: { type: "Point", coordinates: point },
+  })),
+};
+
+function GlobeAtmosphere() {
+  const { map } = useMap();
+
+  useEffect(() => {
+    if (!map) return;
+    const apply = () => {
+      try {
+        map.setFog({
+          color: "rgb(186, 210, 235)",
+          "high-color": "rgb(36, 92, 223)",
+          "space-color": "rgb(8, 12, 26)",
+          "horizon-blend": 0.04,
+          "star-intensity": 0.5,
+        });
+      } catch {
+        // Style without atmosphere support; ignore.
+      }
+    };
+    apply();
+    map.on("style.load", apply);
+    return () => {
+      map.off("style.load", apply);
+    };
+  }, [map]);
+
+  return null;
+}
+
+/** Slides the dots along the arcs by pushing new positions straight to the source. */
+function ArcDotFlow({ sourceId }: { sourceId: string }) {
+  const { map } = useMap();
+
+  useEffect(() => {
+    if (!map) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let frame = 0;
+    const start = performance.now();
+
+    const tick = (now: number) => {
+      const source = map.getSource(sourceId);
+      if (source?.type === "geojson") {
+        source.setData(buildArcDots(((now - start) / 9000) % 1));
+      }
+      frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [map, sourceId]);
+
+  return null;
+}
+
+function GlobeCard() {
+  return (
+    <ExampleCard className="h-[380px]">
+      <div className="bg-background/90 border-border/50 absolute top-3 left-3 z-10 rounded-md border px-2.5 py-1 text-xs font-medium shadow-sm backdrop-blur-md">
+        Globe · routes from Chicago
+      </div>
+      <InView>
+        <Map projection="globe" center={[-96, 38.5]} zoom={3.2}>
+          <GlobeAtmosphere />
+          <Layer
+            id="globe-arc-glow"
+            type="line"
+            data={globeArcs}
+            layout={{ "line-cap": "round" }}
+            paint={{
+              "line-color": "#60a5fa",
+              "line-width": 4,
+              "line-blur": 3,
+              "line-opacity": 0.35,
+            }}
+          />
+          <Layer
+            id="globe-arc"
+            type="line"
+            source="globe-arc-glow"
+            layout={{ "line-cap": "round" }}
+            paint={{
+              "line-color": "#bfdbfe",
+              "line-width": 1.2,
+              "line-opacity": 0.7,
+            }}
+          />
+          <Layer
+            id="globe-dot"
+            type="circle"
+            data={buildArcDots(0)}
+            paint={{
+              "circle-radius": 2.6,
+              "circle-color": "#ffffff",
+              "circle-blur": 0.4,
+            }}
+          />
+          <Layer
+            id="globe-point"
+            type="circle"
+            data={globePoints}
+            paint={{
+              "circle-radius": ["case", ["==", ["get", "hub"], 1], 5, 3],
+              "circle-color": "#ffffff",
+              "circle-stroke-color": "#3b82f6",
+              "circle-stroke-width": 2,
+            }}
+          />
+          <ArcDotFlow sourceId="globe-dot" />
+        </Map>
+      </InView>
+    </ExampleCard>
+  );
+}
+
 type HoveredZip = { zip: string; city: string; x: number; y: number };
 
 function ZipHoverProbe({
@@ -411,16 +611,11 @@ export function ExamplesGrid() {
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <ZipBoundariesCard />
-
-        <PlaceholderCard
-          icon={placeholders[0].icon}
-          label={placeholders[0].label}
-          className="h-[380px]"
-        />
+        <GlobeCard />
       </div>
 
       <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
-        {placeholders.slice(1).map((item) => (
+        {placeholders.map((item) => (
           <PlaceholderCard
             key={item.label}
             icon={item.icon}
