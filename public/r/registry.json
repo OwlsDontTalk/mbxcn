@@ -7,7 +7,7 @@
       "name": "map",
       "type": "registry:ui",
       "title": "Map",
-      "description": "A Mapbox GL map container with light/dark theming and a useMap() context for composing children.",
+      "description": "A Mapbox GL map container with light/dark theming, Standard style + light preset support, and a useMap() context for composing children.",
       "dependencies": ["mapbox-gl"],
       "registryDependencies": [],
       "files": [
@@ -68,6 +68,21 @@
           "path": "src/registry/controls.tsx",
           "type": "registry:ui",
           "target": "components/ui/controls.tsx"
+        }
+      ]
+    },
+    {
+      "name": "layer",
+      "type": "registry:ui",
+      "title": "Layer",
+      "description": "A declarative GeoJSON source + layer as a child of Map. Survives style swaps, updates data via setData, and passes the Mapbox paint/layout spec straight through.",
+      "dependencies": ["mapbox-gl"],
+      "registryDependencies": ["map"],
+      "files": [
+        {
+          "path": "src/registry/layer.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/layer.tsx"
         }
       ]
     },

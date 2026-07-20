@@ -72,6 +72,21 @@
       ]
     },
     {
+      "name": "layer",
+      "type": "registry:ui",
+      "title": "Layer",
+      "description": "A declarative GeoJSON source + layer as a child of Map. Survives style swaps, updates data via setData, and passes the Mapbox paint/layout spec straight through.",
+      "dependencies": ["mapbox-gl"],
+      "registryDependencies": ["map"],
+      "files": [
+        {
+          "path": "src/registry/layer.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/layer.tsx"
+        }
+      ]
+    },
+    {
       "name": "store-locator",
       "type": "registry:block",
       "title": "Store Locator",

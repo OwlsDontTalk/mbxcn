@@ -2,6 +2,7 @@ import {
   BookOpen,
   Boxes,
   CornerDownRight,
+  Layers,
   LucideIcon,
   Map,
   MapPin,
@@ -38,6 +39,7 @@ export const docsNavigation: SiteNavigationGroup[] = [
       { title: "Marker", href: "/docs/marker", icon: MapPin },
       { title: "Popup", href: "/docs/popup", icon: MessageSquare },
       { title: "Controls", href: "/docs/controls", icon: SlidersHorizontal },
+      { title: "Layer", href: "/docs/layer", icon: Layers, new: true },
     ],
   },
   {
