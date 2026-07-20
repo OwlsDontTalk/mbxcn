@@ -134,10 +134,8 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
   const resolvedTheme = useResolvedTheme(themeProp);
 
   const mapStyles = useMemo(() => ({ ...defaultStyles, ...styles }), [styles]);
-  // A fixed `mapStyle` wins; otherwise the style follows the resolved theme.
   const activeStyle = mapStyle ?? mapStyles[resolvedTheme];
 
-  // Initialize the map once the container is mounted.
   useEffect(() => {
     if (!container) return;
 
@@ -178,7 +176,6 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
     });
 
     instance.on("load", () => setIsLoaded(true));
-    // Store the imperatively created map so children can read it via context.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMap(instance);
 
@@ -192,14 +189,12 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [container]);
 
-  // Swap the basemap when the active style changes (theme or `mapStyle`).
   useEffect(() => {
     if (!map || appliedStyleRef.current === activeStyle) return;
     appliedStyleRef.current = activeStyle;
     map.setStyle(activeStyle);
   }, [map, activeStyle]);
 
-  // Apply the light preset when it changes without a style swap.
   useEffect(() => {
     lightPresetRef.current = lightPreset;
     if (!map || !lightPreset) return;

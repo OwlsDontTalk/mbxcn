@@ -87,6 +87,21 @@
       ]
     },
     {
+      "name": "choropleth",
+      "type": "registry:ui",
+      "title": "Choropleth",
+      "description": "Regions coloured by a data value, with outlines and feature-state hover highlighting. Its ramp object is shared with Legend so swatches cannot drift from the paint.",
+      "dependencies": ["mapbox-gl"],
+      "registryDependencies": ["map", "layer"],
+      "files": [
+        {
+          "path": "src/registry/choropleth.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/choropleth.tsx"
+        }
+      ]
+    },
+    {
       "name": "store-locator",
       "type": "registry:block",
       "title": "Store Locator",

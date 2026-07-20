@@ -7,6 +7,7 @@ import {
   Map,
   MapPin,
   MessageSquare,
+  Palette,
   SlidersHorizontal,
 } from "lucide-react";
 
@@ -40,6 +41,7 @@ export const docsNavigation: SiteNavigationGroup[] = [
       { title: "Popup", href: "/docs/popup", icon: MessageSquare },
       { title: "Controls", href: "/docs/controls", icon: SlidersHorizontal },
       { title: "Layer", href: "/docs/layer", icon: Layers, new: true },
+      { title: "Choropleth", href: "/docs/choropleth", icon: Palette, new: true },
     ],
   },
   {

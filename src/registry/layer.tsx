@@ -49,7 +49,6 @@ type ResolvedProps = {
   filter?: FilterSpecification;
 };
 
-// Layer types that render without a source.
 const sourceless = new Set(["background", "sky", "slot"]);
 
 /** Other layers may share this source; removing it while they exist throws. */

@@ -15,8 +15,12 @@ import {
   Wine,
   type LucideIcon,
 } from "lucide-react";
-import { type LayerSpecification } from "mapbox-gl";
+import {
+  type FilterSpecification,
+  type LayerSpecification,
+} from "mapbox-gl";
 
+import { Layer } from "@/registry/layer";
 import { Map, useMap } from "@/registry/map";
 import { Marker } from "@/registry/marker";
 import { ExampleCard, PlaceholderCard } from "./example-card";
@@ -39,12 +43,23 @@ const pois: Poi[] = [
   { name: "Ferry Building", lng: -122.3933, lat: 37.7956, icon: ShoppingBag, color: "bg-orange-500" },
 ];
 
+// Downtown San Francisco to Monterey, roughly following US-101 then CA-68.
 const routePath: [number, number][] = [
-  [-122.3937, 37.7955],
-  [-122.3998, 37.7937],
-  [-122.4058, 37.7881],
-  [-122.4074, 37.7858],
-  [-122.4183, 37.7793],
+  [-122.4194, 37.7749],
+  [-122.4048, 37.7095],
+  [-122.4052, 37.6547],
+  [-122.3255, 37.563],
+  [-122.2364, 37.4852],
+  [-122.143, 37.4419],
+  [-121.9886, 37.3688],
+  [-121.8863, 37.3382],
+  [-121.7681, 37.2431],
+  [-121.6544, 37.1305],
+  [-121.5683, 36.9905],
+  [-121.6, 36.85],
+  [-121.6555, 36.6777],
+  [-121.7846, 36.6208],
+  [-121.8947, 36.6002],
 ];
 
 // Downtown Oakland, CA (14th & Broadway) - origin for the isochrone demo.
@@ -82,6 +97,27 @@ function RouteLayer({ path }: { path: [number, number][] }) {
     };
     add();
     map.on("style.load", add);
+
+    // Frame the whole route: the card's width changes with the breakpoint, so a
+    // hardcoded center/zoom would crop it on some layouts.
+    let minLng = Infinity,
+      minLat = Infinity,
+      maxLng = -Infinity,
+      maxLat = -Infinity;
+    for (const [lng, lat] of path) {
+      minLng = Math.min(minLng, lng);
+      minLat = Math.min(minLat, lat);
+      maxLng = Math.max(maxLng, lng);
+      maxLat = Math.max(maxLat, lat);
+    }
+    map.fitBounds(
+      [
+        [minLng, minLat],
+        [maxLng, maxLat],
+      ],
+      { padding: 34, duration: 0 },
+    );
+
     return () => {
       map.off("style.load", add);
       try {
@@ -213,16 +249,112 @@ function IsochroneLayer({
   return null;
 }
 
+type HoveredZip = { zip: string; city: string; x: number; y: number };
+
+function ZipHoverProbe({
+  onChange,
+}: {
+  onChange: (value: HoveredZip | null) => void;
+}) {
+  const { map } = useMap();
+
+  useEffect(() => {
+    if (!map) return;
+    const canvas = map.getCanvas();
+
+    const move = (event: mapboxgl.MapMouseEvent) => {
+      const feature = event.features?.[0];
+      if (!feature) return;
+      canvas.style.cursor = "pointer";
+      onChange({
+        zip: String(feature.properties?.zip ?? ""),
+        city: String(feature.properties?.city ?? ""),
+        x: event.point.x,
+        y: event.point.y,
+      });
+    };
+
+    const leave = () => {
+      canvas.style.cursor = "";
+      onChange(null);
+    };
+
+    map.on("mousemove", "home-zips-hit", move);
+    map.on("mouseleave", "home-zips-hit", leave);
+
+    return () => {
+      map.off("mousemove", "home-zips-hit", move);
+      map.off("mouseleave", "home-zips-hit", leave);
+    };
+  }, [map, onChange]);
+
+  return null;
+}
+
+function ZipBoundariesCard() {
+  const [hovered, setHovered] = useState<HoveredZip | null>(null);
+  const highlight: FilterSpecification = [
+    "==",
+    ["get", "zip"],
+    hovered?.zip ?? "",
+  ];
+
+  return (
+    <ExampleCard className="h-[380px]">
+      <div className="bg-background/90 border-border/50 absolute top-3 left-3 z-10 rounded-md border px-2.5 py-1 text-xs font-medium shadow-sm backdrop-blur-md">
+        ZIP boundaries · Denver
+      </div>
+      <InView>
+        <Map center={[-104.996, 39.737]} zoom={9.5}>
+          <Layer
+            id="home-zips-hit"
+            type="fill"
+            data="/data/denver-zips.geojson"
+            paint={{ "fill-color": "#000000", "fill-opacity": 0 }}
+          />
+          <Layer
+            id="home-zips-border"
+            type="line"
+            source="home-zips-hit"
+            paint={{
+              "line-color": "#3b82f6",
+              "line-width": 0.9,
+              "line-opacity": 0.85,
+            }}
+          />
+          <Layer
+            id="home-zips-hover"
+            type="line"
+            source="home-zips-hit"
+            filter={highlight}
+            paint={{ "line-color": "#1d4ed8", "line-width": 2.4 }}
+          />
+          <ZipHoverProbe onChange={setHovered} />
+        </Map>
+      </InView>
+      {hovered ? (
+        <div
+          className="bg-background/95 pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-[calc(100%+10px)] rounded-md border px-2 py-1 shadow-md backdrop-blur"
+          style={{ left: hovered.x, top: hovered.y }}
+        >
+          <div className="font-mono text-sm font-semibold">{hovered.zip}</div>
+          <div className="text-muted-foreground text-[11px]">{hovered.city}</div>
+        </div>
+      ) : null}
+    </ExampleCard>
+  );
+}
+
 export function ExamplesGrid() {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
         <ExampleCard className="h-72">
           <div className="bg-background/90 border-border/50 absolute top-3 left-3 z-10 rounded-md border px-2.5 py-1 text-xs font-medium shadow-sm backdrop-blur-md">
-            Route A -&gt; B
+            SF -&gt; Monterey
           </div>
           <InView>
-            <Map center={[-122.406, 37.787]} zoom={12.6}>
+            <Map center={[-121.994, 37.188]} zoom={7}>
               <RouteLayer path={routePath} />
               <Marker lng={routePath[0][0]} lat={routePath[0][1]}>
                 <span className="flex size-6 items-center justify-center rounded-full border-2 border-white bg-indigo-600 text-[11px] font-bold text-white shadow">
@@ -277,8 +409,18 @@ export function ExamplesGrid() {
         </ExampleCard>
       </div>
 
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <ZipBoundariesCard />
+
+        <PlaceholderCard
+          icon={placeholders[0].icon}
+          label={placeholders[0].label}
+          className="h-[380px]"
+        />
+      </div>
+
       <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
-        {placeholders.map((item) => (
+        {placeholders.slice(1).map((item) => (
           <PlaceholderCard
             key={item.label}
             icon={item.icon}

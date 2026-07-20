@@ -24,7 +24,7 @@ export default function LayerPage() {
       title="Layer"
       description="Declaratively add a GeoJSON source and a styled layer as a child of the map."
       prev={{ title: "Controls", href: "/docs/controls" }}
-      next={{ title: "3D", href: "/docs/3d" }}
+      next={{ title: "Choropleth", href: "/docs/choropleth" }}
       toc={[
         { title: "Usage", slug: "usage" },
         { title: "Sharing a Source", slug: "sharing-a-source" },

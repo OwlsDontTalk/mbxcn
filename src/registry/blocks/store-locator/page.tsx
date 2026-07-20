@@ -10,7 +10,6 @@ import { Marker } from "@/registry/marker";
 import { Popup } from "@/registry/popup";
 import { locations, type Location } from "./data";
 
-/** Flies the map to the selected location whenever it changes. */
 function FlyTo({ location }: { location: Location }) {
   const { map, isLoaded } = useMap();
 

@@ -55,7 +55,6 @@ export function Marker({ lng, lat, children, onClick, ...options }: MarkerProps)
     const handleClick = () => onClick?.(instance);
     instance.getElement().addEventListener("click", handleClick);
 
-    // Expose the marker so a nested <Popup> can attach to it via context.
     setMarker(instance);
 
     return () => {

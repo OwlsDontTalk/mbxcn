@@ -17,7 +17,7 @@ export default function ThreeDPage() {
     <DocsLayout
       title="3D"
       description="The Mapbox Standard style renders 3D buildings, landmarks, and trees with dynamic lighting - no styling work required."
-      prev={{ title: "Layer", href: "/docs/layer" }}
+      prev={{ title: "Choropleth", href: "/docs/choropleth" }}
       toc={[
         { title: "Standard 3D", slug: "standard-3d" },
         { title: "Light Presets", slug: "light-presets" },
