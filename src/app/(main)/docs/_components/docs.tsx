@@ -24,7 +24,6 @@ interface TocItem {
   slug: string;
 }
 
-// DocsHeader - Page title and description
 interface DocsTitleProps {
   title: string;
   description: string;
@@ -43,7 +42,6 @@ function DocsTitle({ title, description }: DocsTitleProps) {
   );
 }
 
-// DocsLayout - Full page wrapper with nav
 interface DocsLayoutProps {
   title: string;
   description: string;
@@ -107,7 +105,6 @@ export function DocsLayout({
   );
 }
 
-// DocsSection - Content section with optional title
 interface DocsSectionProps {
   title?: string;
   children: React.ReactNode;
@@ -129,7 +126,6 @@ export function DocsSection({ title, children }: DocsSectionProps) {
   );
 }
 
-// DocsNote - Highlighted note/callout
 interface DocsNoteProps {
   children: React.ReactNode;
 }
@@ -142,7 +138,6 @@ export function DocsNote({ children }: DocsNoteProps) {
   );
 }
 
-// DocsLink - Styled link
 interface DocsLinkProps {
   href: string;
   children: React.ReactNode;
@@ -162,7 +157,6 @@ export function DocsLink({ href, children, external }: DocsLinkProps) {
   );
 }
 
-// DocsCode - Inline code
 export function DocsCode({
   children,
   className,
@@ -182,7 +176,6 @@ export function DocsCode({
   );
 }
 
-// DocsPropTable - API reference table for component props
 interface DocsPropTableProps {
   props: {
     name: string;

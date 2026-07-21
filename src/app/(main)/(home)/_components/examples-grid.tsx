@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import {
   Car,
   Coffee,
-  Globe,
   Mountain,
   Music,
   PenTool,
@@ -25,6 +24,7 @@ import { Map, useMap } from "@/registry/map";
 import { Marker } from "@/registry/marker";
 import { ExampleCard, PlaceholderCard } from "./example-card";
 import { InView } from "./in-view";
+import { activityPoints, corridorDots, corridorLines } from "./sf-activity";
 
 type Poi = {
   name: string;
@@ -66,7 +66,6 @@ const routePath: [number, number][] = [
 const oaklandCenter: [number, number] = [-122.2711, 37.8044];
 
 const placeholders: { icon: LucideIcon; label: string }[] = [
-  { icon: Globe, label: "Globe" },
   { icon: Mountain, label: "Terrain" },
   { icon: PenTool, label: "Drawing" },
   { icon: Search, label: "Search" },
@@ -212,7 +211,6 @@ function IsochroneLayer({
     add();
     map.on("style.load", add);
 
-    // Frame the camera to the isochrone polygon.
     const positions = collectPositions(data.features);
     if (positions.length) {
       let minLng = Infinity,
@@ -249,7 +247,6 @@ function IsochroneLayer({
   return null;
 }
 
-// Chicago hub with routes to major US cities.
 const globeHub: [number, number] = [-87.6298, 41.8781];
 const globeSpokes: [number, number][] = [
   [-122.3321, 47.6062],
@@ -449,6 +446,190 @@ function GlobeCard() {
   );
 }
 
+function HeatmapCard() {
+  return (
+    <ExampleCard className="h-80">
+      <div className="bg-background/90 border-border/50 absolute top-3 left-3 z-10 rounded-md border px-2.5 py-1 text-xs font-medium shadow-sm backdrop-blur-md">
+        Heatmap · activity
+      </div>
+      <InView>
+        <Map center={[-122.4154, 37.7793]} zoom={12.1}>
+          <Layer
+            id="activity-heat"
+            type="heatmap"
+            data={activityPoints}
+            paint={{
+              "heatmap-weight": ["get", "weight"],
+              "heatmap-intensity": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                10,
+                0.6,
+                14,
+                1.6,
+              ],
+              "heatmap-radius": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                10,
+                14,
+                14,
+                38,
+              ],
+              "heatmap-color": [
+                "interpolate",
+                ["linear"],
+                ["heatmap-density"],
+                0,
+                "rgba(59,130,246,0)",
+                0.2,
+                "rgba(96,165,250,0.35)",
+                0.45,
+                "rgba(129,140,248,0.6)",
+                0.7,
+                "rgba(217,119,110,0.75)",
+                1,
+                "rgba(244,114,86,0.9)",
+              ],
+              "heatmap-opacity": 0.85,
+            }}
+          />
+        </Map>
+      </InView>
+    </ExampleCard>
+  );
+}
+
+function CorridorFlow({ sourceId }: { sourceId: string }) {
+  const { map } = useMap();
+
+  useEffect(() => {
+    if (!map) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let frame = 0;
+    const start = performance.now();
+
+    const tick = (now: number) => {
+      const source = map.getSource(sourceId);
+      if (source?.type === "geojson") {
+        source.setData(corridorDots(((now - start) / 7000) % 1));
+      }
+      frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [map, sourceId]);
+
+  return null;
+}
+
+function FlowCard() {
+  return (
+    <ExampleCard className="h-80">
+      <div className="bg-background/90 border-border/50 absolute top-3 left-3 z-10 rounded-md border px-2.5 py-1 text-xs font-medium shadow-sm backdrop-blur-md">
+        Flow · inbound commute
+      </div>
+      <InView>
+        <Map center={[-122.4222, 37.7826]} zoom={12.3}>
+          <Layer
+            id="corridor-line"
+            type="line"
+            data={corridorLines}
+            layout={{ "line-cap": "round" }}
+            paint={{
+              "line-color": "#6366f1",
+              "line-width": 1.4,
+              "line-opacity": 0.35,
+            }}
+          />
+          <Layer
+            id="corridor-dot"
+            type="circle"
+            data={corridorDots(0)}
+            paint={{
+              "circle-radius": 3.4,
+              "circle-color": "#6366f1",
+              "circle-blur": 0.5,
+              "circle-opacity": ["get", "fade"],
+            }}
+          />
+          <CorridorFlow sourceId="corridor-dot" />
+        </Map>
+      </InView>
+    </ExampleCard>
+  );
+}
+
+function ClusterCard() {
+  return (
+    <ExampleCard className="h-80">
+      <div className="bg-background/90 border-border/50 absolute top-3 left-3 z-10 rounded-md border px-2.5 py-1 text-xs font-medium shadow-sm backdrop-blur-md">
+        Clusters · 400 points
+      </div>
+      <InView>
+        <Map center={[-122.4154, 37.7793]} zoom={11.4}>
+          <Layer
+            id="cluster-circle"
+            type="circle"
+            data={activityPoints}
+            sourceOptions={{ cluster: true, clusterRadius: 46 }}
+            filter={["has", "point_count"]}
+            paint={{
+              "circle-color": [
+                "step",
+                ["get", "point_count"],
+                "#c7d2fe",
+                20,
+                "#a5b4fc",
+                60,
+                "#818cf8",
+              ],
+              "circle-radius": [
+                "step",
+                ["get", "point_count"],
+                14,
+                20,
+                20,
+                60,
+                27,
+              ],
+              "circle-stroke-width": 2,
+              "circle-stroke-color": "#ffffff",
+            }}
+          />
+          <Layer
+            id="cluster-count"
+            type="symbol"
+            source="cluster-circle"
+            filter={["has", "point_count"]}
+            layout={{
+              "text-field": ["get", "point_count_abbreviated"],
+              "text-size": 12,
+            }}
+            paint={{ "text-color": "#1e1b4b" }}
+          />
+          <Layer
+            id="cluster-point"
+            type="circle"
+            source="cluster-circle"
+            filter={["!", ["has", "point_count"]]}
+            paint={{
+              "circle-radius": 4,
+              "circle-color": "#6366f1",
+              "circle-stroke-width": 1.5,
+              "circle-stroke-color": "#ffffff",
+            }}
+          />
+        </Map>
+      </InView>
+    </ExampleCard>
+  );
+}
+
 type HoveredZip = { zip: string; city: string; x: number; y: number };
 
 function ZipHoverProbe({
@@ -614,7 +795,13 @@ export function ExamplesGrid() {
         <GlobeCard />
       </div>
 
-      <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+        <HeatmapCard />
+        <FlowCard />
+        <ClusterCard />
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
         {placeholders.map((item) => (
           <PlaceholderCard
             key={item.label}

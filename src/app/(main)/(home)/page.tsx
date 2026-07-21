@@ -31,7 +31,7 @@ export default function Page() {
         </PageActions>
         <p className="text-muted-foreground mx-auto mt-6 max-w-xl text-center text-sm">
           We work in Mapbox every day. mbxcn is the component set we kept
-          rebuilding from project to project — packaged so you can drop it in
+          rebuilding from project to project - packaged so you can drop it in
           with one shadcn command.
         </p>
       </PageHeader>
@@ -40,6 +40,21 @@ export default function Page() {
         className="animate-fade-up animate-stagger container pt-4"
         style={{ "--stagger": 4 } as CSSProperties}
       >
+        <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-lg font-semibold">The base modules</h2>
+          <p className="text-muted-foreground text-sm">
+            Every map below is a component you can install. The heavier
+            showcases live on their own pages -{" "}
+            <Link href="/docs/3d" className="underline underline-offset-4">
+              3D
+            </Link>{" "}
+            and{" "}
+            <Link href="/docs" className="underline underline-offset-4">
+              the docs
+            </Link>
+            .
+          </p>
+        </div>
         <ExamplesGrid />
       </section>
 
