@@ -1,13 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Car,
   Coffee,
-  Mountain,
   Music,
-  PenTool,
-  Search,
   ShoppingBag,
   Trees,
   UtensilsCrossed,
@@ -22,9 +19,9 @@ import {
 import { Layer } from "@/registry/layer";
 import { Map, useMap } from "@/registry/map";
 import { Marker } from "@/registry/marker";
-import { ExampleCard, PlaceholderCard } from "./example-card";
+import { ExampleCard } from "./example-card";
 import { InView } from "./in-view";
-import { activityPoints, corridorDots, corridorLines } from "./sf-activity";
+import { activityPoints } from "./sf-activity";
 
 type Poi = {
   name: string;
@@ -64,12 +61,6 @@ const routePath: [number, number][] = [
 
 // Downtown Oakland, CA (14th & Broadway) - origin for the isochrone demo.
 const oaklandCenter: [number, number] = [-122.2711, 37.8044];
-
-const placeholders: { icon: LucideIcon; label: string }[] = [
-  { icon: Mountain, label: "Terrain" },
-  { icon: PenTool, label: "Drawing" },
-  { icon: Search, label: "Search" },
-];
 
 function RouteLayer({ path }: { path: [number, number][] }) {
   const { map } = useMap();
@@ -450,10 +441,10 @@ function HeatmapCard() {
   return (
     <ExampleCard className="h-80">
       <div className="bg-background/90 border-border/50 absolute top-3 left-3 z-10 rounded-md border px-2.5 py-1 text-xs font-medium shadow-sm backdrop-blur-md">
-        Heatmap · activity
+        Heatmap · point density
       </div>
       <InView>
-        <Map center={[-122.4154, 37.7793]} zoom={12.1}>
+        <Map center={[-122.4135, 37.7695]} zoom={11.1} theme="dark">
           <Layer
             id="activity-heat"
             type="heatmap"
@@ -465,35 +456,37 @@ function HeatmapCard() {
                 ["linear"],
                 ["zoom"],
                 10,
-                0.6,
+                0.35,
                 14,
-                1.6,
+                0.9,
               ],
               "heatmap-radius": [
                 "interpolate",
                 ["linear"],
                 ["zoom"],
                 10,
+                12,
                 14,
-                14,
-                38,
+                26,
               ],
               "heatmap-color": [
                 "interpolate",
                 ["linear"],
                 ["heatmap-density"],
                 0,
-                "rgba(59,130,246,0)",
-                0.2,
-                "rgba(96,165,250,0.35)",
-                0.45,
-                "rgba(129,140,248,0.6)",
-                0.7,
-                "rgba(217,119,110,0.75)",
+                "rgba(12,22,60,0)",
+                0.15,
+                "rgba(37,99,235,0.45)",
+                0.35,
+                "rgba(56,189,248,0.7)",
+                0.6,
+                "rgba(34,211,238,0.85)",
+                0.8,
+                "rgba(190,242,100,0.9)",
                 1,
-                "rgba(244,114,86,0.9)",
+                "rgba(253,224,71,1)",
               ],
-              "heatmap-opacity": 0.85,
+              "heatmap-opacity": 0.9,
             }}
           />
         </Map>
@@ -502,130 +495,210 @@ function HeatmapCard() {
   );
 }
 
-function CorridorFlow({ sourceId }: { sourceId: string }) {
+const ROUTES_URL = "/data/bay-commute-routes.geojson";
+
+const clamp = (v: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, v));
+
+/** Two-pass stroke: a wide soft glow under a narrow bright core. */
+function drawStreak(
+  ctx: CanvasRenderingContext2D,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  color: [number, number, number],
+  alpha: number,
+  width: number,
+) {
+  const [r, g, b] = color;
+
+  if (Math.hypot(x2 - x1, y2 - y1) < 1.5) {
+    ctx.beginPath();
+    ctx.arc(x1, y1, width * 0.9, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${r},${g},${b},${clamp(alpha * 0.55, 0, 0.9)})`;
+    ctx.fill();
+    return;
+  }
+
+  ctx.lineCap = "round";
+
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.lineWidth = width * 4.5;
+  ctx.strokeStyle = `rgba(${r},${g},${b},${clamp(alpha * 0.08, 0, 0.18)})`;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.lineWidth = width;
+  ctx.strokeStyle = `rgba(${r},${g},${b},${clamp(alpha * 0.7, 0, 0.95)})`;
+  ctx.stroke();
+}
+
+const PER_ROUTE = 16;
+
+function sampleAt(coords: [number, number][], t: number): [number, number] {
+  const span = (coords.length - 1) * clamp(t, 0, 1);
+  const index = Math.min(Math.floor(span), coords.length - 2);
+  const frac = span - index;
+  const [x1, y1] = coords[index];
+  const [x2, y2] = coords[index + 1];
+  return [x1 + (x2 - x1) * frac, y1 + (y2 - y1) * frac];
+}
+
+function FlowCanvas({
+  canvasRef,
+  routes,
+}: {
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  routes: [number, number][][] | null;
+}) {
   const { map } = useMap();
 
   useEffect(() => {
-    if (!map) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const canvas = canvasRef.current;
+    if (!map || !canvas || !routes?.length) return;
 
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     let frame = 0;
-    const start = performance.now();
+    let width = 0;
+    let height = 0;
 
-    const tick = (now: number) => {
-      const source = map.getSource(sourceId);
-      if (source?.type === "geojson") {
-        source.setData(corridorDots(((now - start) / 7000) % 1));
-      }
-      frame = requestAnimationFrame(tick);
+    const resize = () => {
+      const ratio = window.devicePixelRatio || 1;
+      const box = map.getCanvas();
+      width = box.clientWidth;
+      height = box.clientHeight;
+      canvas.width = Math.max(1, Math.floor(width * ratio));
+      canvas.height = Math.max(1, Math.floor(height * ratio));
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     };
 
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [map, sourceId]);
+    resize();
+    map.on("resize", resize);
+
+    const start = performance.now();
+
+    const draw = (now: number) => {
+      ctx.clearRect(0, 0, width, height);
+      ctx.globalCompositeOperation = "lighter";
+
+      const elapsed = reduced ? 0.4 : (now - start) / 14000;
+
+      routes.forEach((coords, routeIndex) => {
+        for (let i = 0; i < PER_ROUTE; i++) {
+          const seed = (routeIndex + 1) * 0.173 + i * 0.731;
+          const raw = elapsed + seed;
+          const tRaw = ((raw % 1) + 1) % 1;
+          // Accelerate toward the destination so arrivals bunch up downtown.
+          const t = tRaw + (1 - Math.pow(1 - tRaw, 2.4) - tRaw) * 0.55;
+
+          const [lng, lat] = sampleAt(coords, t);
+          const point = map.project([lng, lat]);
+          if (
+            point.x < -60 ||
+            point.y < -60 ||
+            point.x > width + 60 ||
+            point.y > height + 60
+          ) {
+            continue;
+          }
+
+          const ahead = map.project(sampleAt(coords, Math.min(t + 0.02, 1)));
+
+          const pulse = 0.88 + 0.12 * Math.sin(now * 0.0016 + i * 0.9);
+          const weight = 0.48 + 0.72 * Math.pow(t, 2.7);
+          const w = (1.5 + weight * 1.4) * pulse;
+          const a = clamp(0.34 + weight * 0.42, 0, 0.95);
+
+          drawStreak(
+            ctx,
+            point.x,
+            point.y,
+            ahead.x,
+            ahead.y,
+            [56, 189, 248],
+            a,
+            w,
+          );
+        }
+      });
+
+      ctx.globalCompositeOperation = "source-over";
+      frame = requestAnimationFrame(draw);
+    };
+
+    frame = requestAnimationFrame(draw);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      map.off("resize", resize);
+    };
+  }, [map, canvasRef, routes]);
 
   return null;
 }
 
 function FlowCard() {
-  return (
-    <ExampleCard className="h-80">
-      <div className="bg-background/90 border-border/50 absolute top-3 left-3 z-10 rounded-md border px-2.5 py-1 text-xs font-medium shadow-sm backdrop-blur-md">
-        Flow · inbound commute
-      </div>
-      <InView>
-        <Map center={[-122.4222, 37.7826]} zoom={12.3}>
-          <Layer
-            id="corridor-line"
-            type="line"
-            data={corridorLines}
-            layout={{ "line-cap": "round" }}
-            paint={{
-              "line-color": "#6366f1",
-              "line-width": 1.4,
-              "line-opacity": 0.35,
-            }}
-          />
-          <Layer
-            id="corridor-dot"
-            type="circle"
-            data={corridorDots(0)}
-            paint={{
-              "circle-radius": 3.4,
-              "circle-color": "#6366f1",
-              "circle-blur": 0.5,
-              "circle-opacity": ["get", "fade"],
-            }}
-          />
-          <CorridorFlow sourceId="corridor-dot" />
-        </Map>
-      </InView>
-    </ExampleCard>
-  );
-}
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [routes, setRoutes] = useState<[number, number][][] | null>(null);
 
-function ClusterCard() {
+  useEffect(() => {
+    let active = true;
+    fetch(ROUTES_URL)
+      .then((res) => res.json())
+      .then((json: GeoJSON.FeatureCollection) => {
+        if (!active) return;
+        setRoutes(
+          json.features
+            .filter((f) => f.geometry.type === "LineString")
+            .map((f) => (f.geometry as GeoJSON.LineString).coordinates as [number, number][]),
+        );
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <ExampleCard className="h-80">
       <div className="bg-background/90 border-border/50 absolute top-3 left-3 z-10 rounded-md border px-2.5 py-1 text-xs font-medium shadow-sm backdrop-blur-md">
-        Clusters · 400 points
+        Commute flow · 8 routes
+      </div>
+      <div className="bg-background/85 text-muted-foreground absolute right-3 bottom-3 z-10 rounded-md border px-2 py-1 text-[10px] backdrop-blur">
+        Directions API
       </div>
       <InView>
-        <Map center={[-122.4154, 37.7793]} zoom={11.4}>
+        <Map center={[-122.28, 37.775]} zoom={9.6} pitch={48} theme="dark">
           <Layer
-            id="cluster-circle"
-            type="circle"
-            data={activityPoints}
-            sourceOptions={{ cluster: true, clusterRadius: 46 }}
-            filter={["has", "point_count"]}
+            id="commute-route-line"
+            type="line"
+            data={ROUTES_URL}
+            layout={{ "line-cap": "round", "line-join": "round" }}
             paint={{
-              "circle-color": [
-                "step",
-                ["get", "point_count"],
-                "#c7d2fe",
-                20,
-                "#a5b4fc",
-                60,
-                "#818cf8",
-              ],
-              "circle-radius": [
-                "step",
-                ["get", "point_count"],
-                14,
-                20,
-                20,
-                60,
-                27,
-              ],
-              "circle-stroke-width": 2,
-              "circle-stroke-color": "#ffffff",
+              "line-color": "#94a3b8",
+              "line-width": 1,
+              "line-opacity": 0.18,
             }}
           />
-          <Layer
-            id="cluster-count"
-            type="symbol"
-            source="cluster-circle"
-            filter={["has", "point_count"]}
-            layout={{
-              "text-field": ["get", "point_count_abbreviated"],
-              "text-size": 12,
-            }}
-            paint={{ "text-color": "#1e1b4b" }}
-          />
-          <Layer
-            id="cluster-point"
-            type="circle"
-            source="cluster-circle"
-            filter={["!", ["has", "point_count"]]}
-            paint={{
-              "circle-radius": 4,
-              "circle-color": "#6366f1",
-              "circle-stroke-width": 1.5,
-              "circle-stroke-color": "#ffffff",
-            }}
-          />
+          <FlowCanvas canvasRef={canvasRef} routes={routes} />
         </Map>
       </InView>
+      <canvas
+        ref={canvasRef}
+        className="pointer-events-none absolute inset-0 z-[5]"
+      />
     </ExampleCard>
   );
 }
@@ -795,22 +868,11 @@ export function ExamplesGrid() {
         <GlobeCard />
       </div>
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <HeatmapCard />
         <FlowCard />
-        <ClusterCard />
       </div>
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-        {placeholders.map((item) => (
-          <PlaceholderCard
-            key={item.label}
-            icon={item.icon}
-            label={item.label}
-            className="h-36"
-          />
-        ))}
-      </div>
     </div>
   );
 }
